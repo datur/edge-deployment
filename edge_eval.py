@@ -26,40 +26,33 @@ val_loader = get_imagenet_val_loader(
 
 dirs = sorted([d for d in [x for x in os.walk('models/openvino')][0][1] if not d.startswith('.') ])
 
-neptune.init('davidturner94/edge-deployment-eval')
+project = neptune.init('davidturner94/edge-deployment-eval')
+
+ie = IECore()
 
 for model in dirs:
     
+    
+    tags = ['openvino', 'edge', 'pi']
 
+    experiment = project.create_experiment(name=model)
+    experiment.append_tags(tags)
 
+    experiment.download_artifacts(f'models/openvino/{model}')
+    
     model_xml = f"models/openvino/{model}/{model}.xml"
     model_bin = f"models/openvino/{model}/{model}.bin"
-
-    ie = IECore()
 
     net = ie.read_network(model=model_xml, weights=model_bin)
     exec_net = ie.load_network(network=net, device_name="MYRIAD")
 
-    device = ie.get_metric(metric_name="FULL_DEVICE_NAME", device_name="MYRIAD")
-    precision = ie.get_metric(metric_name="OPTIMIZATION_CAPABILITIES", device_name="MYRIAD")
-
-    PARAMS = {
-                'device': device,
-                'precision': precision[0],
-    }
-
-    tags = ['openvino', 'edge', 'pi']
-
-    experiment = neptune.create_experiment(name=model, params=PARAMS)
-    experiment.append_tags(tags)
-    
     inputBlob = next(iter(net.inputs))
     (n, c, h, w) = net.inputs[inputBlob].shape
 
     top1 = AverageMeter('Acc@1', ':.2f')
     top5 = AverageMeter('Acc@5', ':.2f')
-    batch_time = AverageMeter('Time', ':.5f')
-    inference_time = AverageMeter('Inference Time', ':.5f')
+    batch_time = AverageMeter('Time', ':.2f')
+    inference_time = AverageMeter('Inference Time', ':.2f')
 
     class_correct = list({'top1': 0., 'top5': 0., 'total': 0.} for _ in range(len(nnu.IMAGENET_LABELS)))
 
