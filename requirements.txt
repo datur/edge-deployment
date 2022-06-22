@@ -46,7 +46,7 @@ nbformat==5.0.7
 neptune-client==0.4.117
 networkx==2.4
 notebook==6.0.3
-numpy==1.18.5
+numpy==1.22.0
 oauthlib==3.1.0
 olefile==0.46
 onnx==1.7.0
